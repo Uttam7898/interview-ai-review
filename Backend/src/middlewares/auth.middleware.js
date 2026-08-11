@@ -7,7 +7,11 @@ const USE_MOCK = !process.env.MONGO_URI
 
 async function authUser(req, res, next) {
 
-    const token = req.cookies.token
+    console.log('Auth middleware - cookies:', req.cookies)
+
+    // Accept token from cookie or Authorization header (Bearer)
+    const headerToken = req.headers && req.headers.authorization && req.headers.authorization.split(' ')[1]
+    const token = req.cookies.token || headerToken
 
     if (!token) {
         return res.status(401).json({

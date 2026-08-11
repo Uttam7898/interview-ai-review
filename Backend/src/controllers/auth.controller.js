@@ -38,9 +38,11 @@ async function registerUserController(req, res) {
         mockUsers.set(id, user)
 
         const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
-        res.cookie("token", token)
+        const isProd = process.env.NODE_ENV === 'production'
+const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
+        res.cookie("token", token, cookieOptions)
 
-        return res.status(201).json({ message: "User registered successfully", user: { id: user._id, username: user.username, email: user.email } })
+            return res.status(201).json({ message: "User registered successfully", token, user: { id: user._id, username: user.username, email: user.email } })
     }
 
     const isUserAlreadyExists = await userModel.findOne({ $or: [ { username }, { email } ] })
@@ -56,10 +58,12 @@ async function registerUserController(req, res) {
     const user = await userModel.create({ username, email, password: hash })
 
     const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
+    const isProd = process.env.NODE_ENV === 'production'
+const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
 
-    res.cookie("token", token)
+    res.cookie("token", token, cookieOptions)
 
-    res.status(201).json({ message: "User registered successfully", user: { id: user._id, username: user.username, email: user.email } })
+        res.status(201).json({ message: "User registered successfully", token, user: { id: user._id, username: user.username, email: user.email } })
 
 }
 
@@ -82,8 +86,10 @@ async function loginUserController(req, res) {
         if (!isPasswordValid) return res.status(400).json({ message: "Invalid email or password" })
 
         const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
-        res.cookie("token", token)
-        return res.status(200).json({ message: "User loggedIn successfully.", user: { id: user._id, username: user.username, email: user.email } })
+        const isProd = process.env.NODE_ENV === 'production'
+const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
+        res.cookie("token", token, cookieOptions)
+            return res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
     }
 
     const user = await userModel.findOne({ email })
@@ -99,9 +105,11 @@ async function loginUserController(req, res) {
     }
 
     const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
+    const isProd = process.env.NODE_ENV === 'production'
+const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
 
-    res.cookie("token", token)
-    res.status(200).json({ message: "User loggedIn successfully.", user: { id: user._id, username: user.username, email: user.email } })
+    res.cookie("token", token, cookieOptions)
+        res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
 }
 
 
@@ -112,6 +120,8 @@ async function loginUserController(req, res) {
  */
 async function logoutUserController(req, res) {
     const token = req.cookies.token
+    const isProd = process.env.NODE_ENV === 'production'
+const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
     if (token) {
         if (USE_MOCK) {
             mockBlacklist.add(token)
@@ -120,7 +130,7 @@ async function logoutUserController(req, res) {
         }
     }
 
-    res.clearCookie("token")
+    res.clearCookie("token", cookieOptions)
 
     res.status(200).json({ message: "User logged out successfully" })
 }
@@ -135,13 +145,14 @@ async function getMeController(req, res) {
     if (USE_MOCK) {
         const user = mockUsers.get(req.user.id)
         if (!user) return res.status(404).json({ message: "User not found" })
-
-        return res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
+    console.log('Incoming cookies:', req.cookies)
+        
+            return res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
     }
 
     const user = await userModel.findById(req.user.id)
 
-    res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
+        res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
 
 }
 

@@ -12,12 +12,21 @@ const mockReports = new Map()
  * @description Controller to generate interview report based on user self description, resume and job description.
  */
 async function generateInterViewReportController(req, res) {
+    let resumeText = ""
+    if (req.file && req.file.buffer) {
+        try {
+            const parsed = await (new pdfParse.PDFParse(new Uint8Array(req.file.buffer))).getText()
+            resumeText = parsed.text || ""
+        } catch (err) {
+            console.warn("Could not extract PDF text:", err.message)
+            resumeText = req.file.originalname || "Uploaded resume"
+        }
+    }
 
-    const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
     const { selfDescription, jobDescription } = req.body
 
     const interViewReportByAi = await generateInterviewReport({
-        resume: resumeContent.text,
+        resume: resumeText,
         selfDescription,
         jobDescription
     })
@@ -27,7 +36,7 @@ async function generateInterViewReportController(req, res) {
         const interviewReport = {
             _id: id,
             user: req.user.id,
-            resume: resumeContent.text,
+            resume: resumeText,
             selfDescription,
             jobDescription,
             ...interViewReportByAi,
@@ -38,7 +47,7 @@ async function generateInterViewReportController(req, res) {
         return res.status(201).json({ message: "Interview report generated successfully.", interviewReport })
     }
 
-    const interviewReport = await interviewReportModel.create({ user: req.user.id, resume: resumeContent.text, selfDescription, jobDescription, ...interViewReportByAi })
+    const interviewReport = await interviewReportModel.create({ user: req.user.id, resume: resumeText, selfDescription, jobDescription, ...interViewReportByAi })
 
     res.status(201).json({ message: "Interview report generated successfully.", interviewReport })
 
