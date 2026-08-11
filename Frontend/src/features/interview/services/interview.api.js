@@ -5,6 +5,15 @@ const api = axios.create({
     withCredentials: true,
 })
 
+// Attach auth token to every request (matches auth.api.js interceptor)
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+}, (error) => Promise.reject(error))
+
 
 /**
  * @description Service to generate interview report based on user self description, resume and job description.
@@ -12,9 +21,11 @@ const api = axios.create({
 export const generateInterviewReport = async ({ jobDescription, selfDescription, resumeFile }) => {
 
     const formData = new FormData()
-    formData.append("jobDescription", jobDescription)
-    formData.append("selfDescription", selfDescription)
-    formData.append("resume", resumeFile)
+    formData.append("jobDescription", jobDescription || "")
+    formData.append("selfDescription", selfDescription || "")
+    if (resumeFile) {
+        formData.append("resume", resumeFile)
+    }
 
     const response = await api.post("/api/interview/", formData, {
         headers: {
