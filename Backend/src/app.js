@@ -33,7 +33,6 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions))
-app.options("*", cors(corsOptions))
 
 /* require all the routes here */
 const authRouter = require("./routes/auth.routes")
