@@ -3,7 +3,11 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const tokenBlacklistModel = require("../models/blacklist.model")
 
-const USE_MOCK = !process.env.MONGO_URI
+const mongoose = require("mongoose")
+
+function isMockMode() {
+    return (process.env.MOCK_AI === "true") || (!process.env.MONGO_URI) || (mongoose.connection.readyState !== 1)
+}
 
 // In-memory stores for mock mode
 const mockUsers = new Map()
@@ -26,7 +30,7 @@ async function registerUserController(req, res) {
         })
     }
 
-    if (USE_MOCK) {
+    if (isMockMode()) {
         const exists = Array.from(mockUsers.values()).find(u => u.username === username || u.email === email)
         if (exists) {
             return res.status(400).json({ message: "Account already exists with this email address or username" })
@@ -76,7 +80,7 @@ const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secur
 async function loginUserController(req, res) {
 
     const { email, password } = req.body
-    if (USE_MOCK) {
+    if (isMockMode()) {
         let user = Array.from(mockUsers.values()).find(u => u.email.toLowerCase() === email.toLowerCase())
         if (!user) {
             // In mock mode without MongoDB, auto-create the user so login always succeeds for testing
@@ -128,7 +132,7 @@ async function logoutUserController(req, res) {
     const isProd = process.env.NODE_ENV === 'production'
     const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
     if (token) {
-        if (USE_MOCK) {
+        if (isMockMode()) {
             mockBlacklist.add(token)
         } else {
             await tokenBlacklistModel.create({ token })
@@ -147,7 +151,7 @@ async function logoutUserController(req, res) {
  */
 async function getMeController(req, res) {
 
-    if (USE_MOCK) {
+    if (isMockMode()) {
         let user = mockUsers.get(req.user.id)
         if (!user) {
             // Reconstruct mock user if server restarted in mock mode

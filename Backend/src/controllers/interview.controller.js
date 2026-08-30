@@ -2,7 +2,10 @@ const pdfParse = require("pdf-parse")
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
-const USE_MOCK = !process.env.MONGO_URI
+const mongoose = require("mongoose")
+function isMockMode() {
+    return (process.env.MOCK_AI === "true") || (!process.env.MONGO_URI) || (mongoose.connection.readyState !== 1)
+}
 const mockReports = new Map()
 
 
@@ -31,7 +34,7 @@ async function generateInterViewReportController(req, res) {
         jobDescription
     })
 
-    if (USE_MOCK) {
+    if (isMockMode()) {
         const id = `mock-${Math.random().toString(36).slice(2,9)}`
         const interviewReport = {
             _id: id,
@@ -59,7 +62,7 @@ async function generateInterViewReportController(req, res) {
 async function getInterviewReportByIdController(req, res) {
 
     const { interviewId } = req.params
-    if (USE_MOCK) {
+    if (isMockMode()) {
         const interviewReport = mockReports.get(interviewId)
         if (!interviewReport || interviewReport.user !== req.user.id) {
             return res.status(404).json({ message: "Interview report not found." })
@@ -82,7 +85,7 @@ async function getInterviewReportByIdController(req, res) {
  * @description Controller to get all interview reports of logged in user.
  */
 async function getAllInterviewReportsController(req, res) {
-    if (USE_MOCK) {
+    if (isMockMode()) {
         const reports = Array.from(mockReports.values()).filter(r => r.user === req.user.id).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(r => {
             const copy = { ...r }
             delete copy.resume
@@ -109,7 +112,7 @@ async function getAllInterviewReportsController(req, res) {
  */
 async function generateResumePdfController(req, res) {
     const { interviewReportId } = req.params
-    if (USE_MOCK) {
+    if (isMockMode()) {
         const interviewReport = mockReports.get(interviewReportId)
         if (!interviewReport || interviewReport.user !== req.user.id) return res.status(404).json({ message: "Interview report not found." })
 

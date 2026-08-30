@@ -48,4 +48,11 @@ app.use("/api/interview", interviewRouter)
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' })
 })
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error("Unhandled API Error:", err)
+    res.status(500).json({ message: err.message || "Internal Server Error" })
+})
+
 module.exports = app

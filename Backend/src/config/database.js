@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-
+mongoose.set('bufferCommands', false)
 
 async function connectToDB() {
 
