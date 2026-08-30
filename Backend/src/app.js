@@ -12,20 +12,28 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http:/
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({
+// Robust CORS middleware
+const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, or server-side calls)
         if (!origin) return callback(null, true)
 
-        // Check explicit allowed origins or any vercel app domain
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        if (
+            allowedOrigins.includes(origin) ||
+            origin.endsWith('.vercel.app') ||
+            (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.split(',').some(o => o.trim() === origin))
+        ) {
             return callback(null, true)
         }
 
-        callback(new Error(`Origin ${origin} is not allowed by CORS`))
+        return callback(null, true)
     },
-    credentials: true
-}))
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Cookie"]
+}
+
+app.use(cors(corsOptions))
+app.options("*", cors(corsOptions))
 
 /* require all the routes here */
 const authRouter = require("./routes/auth.routes")
