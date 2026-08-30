@@ -77,9 +77,14 @@ async function loginUserController(req, res) {
 
     const { email, password } = req.body
     if (USE_MOCK) {
-        const user = Array.from(mockUsers.values()).find(u => u.email === email)
+        let user = Array.from(mockUsers.values()).find(u => u.email.toLowerCase() === email.toLowerCase())
         if (!user) {
-            return res.status(400).json({ message: "Invalid email or password" })
+            // In mock mode without MongoDB, auto-create the user so login always succeeds for testing
+            const hash = await bcrypt.hash(password, 10)
+            const id = `mock-${Math.random().toString(36).slice(2, 9)}`
+            const username = email.split('@')[0] || "user"
+            user = { _id: id, username, email, password: hash }
+            mockUsers.set(id, user)
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password)
@@ -87,9 +92,9 @@ async function loginUserController(req, res) {
 
         const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
         const isProd = process.env.NODE_ENV === 'production'
-const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
+        const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
         res.cookie("token", token, cookieOptions)
-            return res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
+        return res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
     }
 
     const user = await userModel.findOne({ email })
@@ -106,10 +111,10 @@ const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secur
 
     const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: "1d" })
     const isProd = process.env.NODE_ENV === 'production'
-const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
+    const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
 
     res.cookie("token", token, cookieOptions)
-        res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
+    res.status(200).json({ message: "User loggedIn successfully.", token, user: { id: user._id, username: user.username, email: user.email } })
 }
 
 
@@ -121,7 +126,7 @@ const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secur
 async function logoutUserController(req, res) {
     const token = req.cookies.token
     const isProd = process.env.NODE_ENV === 'production'
-const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
+    const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd }
     if (token) {
         if (USE_MOCK) {
             mockBlacklist.add(token)
@@ -143,16 +148,19 @@ const cookieOptions = { httpOnly: true, sameSite: isProd ? 'none' : 'lax', secur
 async function getMeController(req, res) {
 
     if (USE_MOCK) {
-        const user = mockUsers.get(req.user.id)
-        if (!user) return res.status(404).json({ message: "User not found" })
-    console.log('Incoming cookies:', req.cookies)
-        
-            return res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
+        let user = mockUsers.get(req.user.id)
+        if (!user) {
+            // Reconstruct mock user if server restarted in mock mode
+            const username = req.user.username || "user"
+            user = { _id: req.user.id, username, email: `${username}@example.com` }
+            mockUsers.set(req.user.id, user)
+        }
+        return res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
     }
 
     const user = await userModel.findById(req.user.id)
 
-        res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
+    res.status(200).json({ message: "User details fetched successfully", user: { id: user._id, username: user.username, email: user.email } })
 
 }
 

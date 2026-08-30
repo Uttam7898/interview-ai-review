@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+Backend/node_modules/
+Frontend/node_modules/
+
+# Environment variables (SECRETS)
+.env
+.env.*
+!.env.example
+Backend/.env
+Backend/.env.*
+!Backend/.env.example
+Frontend/.env
+Frontend/.env.*
+
+# Build outputs
+Frontend/dist/
+dist/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
