@@ -1,6 +1,6 @@
 const { z } = require("zod")
 const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer")
+
 
 const USE_MOCK = (process.env.MOCK_AI === "true") || (!process.env.GOOGLE_GENAI_API_KEY)
 
@@ -90,6 +90,7 @@ async function generatePdfFromHtml(htmlContent) {
     try {
         let browser
         try {
+            const puppeteer = require("puppeteer")
             browser = await puppeteer.launch({
                 args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
             })
