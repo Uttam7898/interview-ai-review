@@ -5,18 +5,14 @@ require('dotenv').config()
 const app = require('../Backend/src/app')
 const connectToDB = require('../Backend/src/config/database')
 
-let isDbConnected = false
-
-module.exports = async (req, res) => {
+// Ensure DB is connected before processing requests
+app.use(async (req, res, next) => {
     try {
-        if (!isDbConnected) {
-            await connectToDB()
-            isDbConnected = true
-        }
+        await connectToDB()
     } catch (err) {
-        console.error("DB connection error in serverless function:", err)
+        console.error("DB connection error in serverless request:", err)
     }
+    next()
+})
 
-    return app(req, res)
-}
-
+module.exports = app
