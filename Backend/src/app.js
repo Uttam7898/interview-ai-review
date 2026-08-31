@@ -41,10 +41,12 @@ const interviewRouter = require("./routes/interview.routes")
 
 /* using all the routes here */
 app.use("/api/auth", authRouter)
+app.use("/auth", authRouter)
 app.use("/api/interview", interviewRouter)
+app.use("/interview", interviewRouter)
 
 // Health check
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
     res.status(200).json({ status: 'ok' })
 })
 
